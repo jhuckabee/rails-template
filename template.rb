@@ -8,13 +8,6 @@ def apply_template!
   assert_postgresql
   add_template_repository_to_source_path
 
-  if install_vite?
-    self.options = options.merge(
-      css: nil,
-      skip_asset_pipeline: true
-    )
-  end
-
   template "Gemfile.tt", force: true
 
   template "README.md.tt", force: true
@@ -52,14 +45,6 @@ def apply_template!
       # Ignore locally-installed gems.
       /vendor/bundle/
     IGNORE
-
-    if install_vite?
-      File.rename("app/javascript", "app/frontend") if File.exist?("app/javascript")
-      run_with_clean_bundler_env "bundle exec vite install"
-      run "yarn add autoprefixer sass @picocss/pico"
-      copy_file "postcss.config.js"
-      apply "app/frontend/template.rb"
-    end
 
     apply "app/template.rb"
 
@@ -111,7 +96,9 @@ def add_template_repository_to_source_path
     at_exit { FileUtils.remove_entry(tempdir) }
     git clone: [
       "--quiet",
-      "https://github.com/mattbrictson/rails-template.git",
+      "--branch",
+      "custom",
+      "https://github.com/jhuckabee/rails-template.git",
       tempdir
     ].map(&:shellescape).join(" ")
 
@@ -230,7 +217,6 @@ def add_yarn_start_script
   return add_package_json_script(start: "bin/dev") if File.exist?("bin/dev")
 
   procs = ["'bin/rails s -b 0.0.0.0'"]
-  procs << "'bin/vite dev'" if File.exist?("bin/vite")
   procs << "bin/webpack-dev-server" if File.exist?("bin/webpack-dev-server")
 
   add_package_json_script(start: "stale-dep && concurrently -i -k --kill-others-on-fail -p none #{procs.join(" ")}")
@@ -279,7 +265,4 @@ def simplify_package_json_deps
   run_with_clean_bundler_env "yarn install"
 end
 
-def install_vite?
-  options[:javascript] == "vite"
-end
 apply_template!

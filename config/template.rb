@@ -1,4 +1,3 @@
-apply "config/application.rb"
 template "config/database.yml", force: true
 remove_file "config/secrets.yml"
 copy_file "config/sidekiq.yml"
